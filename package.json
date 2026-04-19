@@ -1,0 +1,17 @@
+{
+  "name": "tiktok-live-tts-node",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal TikTok Live chat-to-speech bridge for local testing.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "say": "^0.16.0",
+    "socket.io": "^4.8.1",
+    "tiktok-live-connector": "^1.1.6"
+  }
+}

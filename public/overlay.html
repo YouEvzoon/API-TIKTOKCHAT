@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overlay Top Taps</title>
+  <style>
+    :root {
+      --panel-bg: rgba(12, 16, 20, 0.72);
+      --panel-border: rgba(255, 255, 255, 0.2);
+      --title: #f7c65d;
+      --text: #f7f7f7;
+      --muted: #b6c0c9;
+      --accent: #44d18a;
+      --row-bg: rgba(255, 255, 255, 0.07);
+      --shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+      --font: "Trebuchet MS", "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: var(--font);
+      color: var(--text);
+    }
+
+    .overlay {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: min(420px, calc(100vw - 20px));
+      pointer-events: none;
+    }
+
+    .panel {
+      border-radius: 16px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      color: var(--title);
+      text-transform: uppercase;
+    }
+
+    .state {
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+      max-width: 180px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: var(--row-bg);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .rank {
+      font-weight: 800;
+      color: var(--title);
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    .user {
+      font-weight: 700;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.95rem;
+    }
+
+    .likes {
+      font-weight: 800;
+      color: var(--accent);
+      min-width: 64px;
+      text-align: right;
+      font-size: 0.95rem;
+    }
+
+    .empty {
+      font-size: 0.9rem;
+      color: var(--muted);
+      padding: 12px 10px;
+      text-align: center;
+      background: var(--row-bg);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+    }
+
+    .footer {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: right;
+      opacity: 0.9;
+    }
+
+    .error .state {
+      color: #ff8a8a;
+    }
+
+    @media (max-width: 640px) {
+      .overlay {
+        top: 12px;
+        right: 10px;
+        width: calc(100vw - 12px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="overlay">
+    <section id="panel" class="panel">
+      <header class="header">
+        <h1 class="title">Top Taps</h1>
+        <span id="state" class="state">Cargando...</span>
+      </header>
+
+      <ol id="list" class="list"></ol>
+      <div id="empty" class="empty">Aun no hay taps registrados.</div>
+      <div id="footer" class="footer">Esperando datos...</div>
+    </section>
+  </main>
+
+  <script>
+    const listEl = document.getElementById('list');
+    const emptyEl = document.getElementById('empty');
+    const stateEl = document.getElementById('state');
+    const footerEl = document.getElementById('footer');
+    const panelEl = document.getElementById('panel');
+
+    const params = new URLSearchParams(window.location.search);
+
+    const config = {
+      api: (params.get('api') || window.location.origin || 'http://localhost:3000').replace(/\/$/, ''),
+      streamer: (params.get('streamer') || '').trim(),
+      limit: Math.max(1, Math.min(20, Number(params.get('limit') || 10))),
+      intervalMs: Math.max(1500, Number(params.get('interval') || 3000)),
+      title: params.get('title') || 'Top Taps'
+    };
+
+    document.title = config.title;
+    document.querySelector('.title').textContent = config.title;
+
+    function setState(text, isError) {
+      stateEl.textContent = text;
+      panelEl.classList.toggle('error', Boolean(isError));
+    }
+
+    function formatWhen(date) {
+      if (!date || Number.isNaN(date.getTime())) {
+        return '--:--:--';
+      }
+      return date.toLocaleTimeString();
+    }
+
+    async function request(path) {
+      const res = await fetch(config.api + path, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error((data && data.error) || 'request failed');
+      }
+      return data;
+    }
+
+    async function detectStreamerId() {
+      if (config.streamer) {
+        return config.streamer;
+      }
+
+      const streamers = await request('/streamers');
+      if (Array.isArray(streamers) && streamers.length > 0) {
+        return streamers[0].id;
+      }
+
+      throw new Error('No hay streamer activo. Agrega uno primero.');
+    }
+
+    function renderTop(rows) {
+      const safe = Array.isArray(rows) ? rows.slice(0, config.limit) : [];
+      listEl.innerHTML = '';
+
+      if (safe.length === 0) {
+        emptyEl.style.display = 'block';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      for (const row of safe) {
+        const li = document.createElement('li');
+        li.className = 'item';
+
+        const rank = document.createElement('span');
+        rank.className = 'rank';
+        rank.textContent = '#' + (row.rank || '-');
+
+        const user = document.createElement('span');
+        user.className = 'user';
+        user.textContent = row.user || 'anon';
+
+        const likes = document.createElement('span');
+        likes.className = 'likes';
+        likes.textContent = String(row.likes || 0);
+
+        li.appendChild(rank);
+        li.appendChild(user);
+        li.appendChild(likes);
+        listEl.appendChild(li);
+      }
+    }
+
+    async function tick() {
+      try {
+        const streamerId = await detectStreamerId();
+        const rows = await request('/streamers/' + encodeURIComponent(streamerId) + '/top-taps');
+        renderTop(rows);
+
+        const now = new Date();
+        setState('Conectado: ' + streamerId, false);
+        footerEl.textContent = 'Actualizado: ' + formatWhen(now);
+      } catch (error) {
+        setState(error.message, true);
+      }
+    }
+
+    tick();
+    setInterval(tick, config.intervalMs);
+  </script>
+</body>
+</html>

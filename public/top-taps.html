@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preview Top Taps</title>
+  <style>
+    :root {
+      --bg: #f4f2ec;
+      --surface: #fffdf7;
+      --ink: #21201c;
+      --accent: #146356;
+      --accent-2: #f3a33b;
+      --muted: #6a665a;
+      --danger: #9f2a2a;
+      --border: #d8d0be;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 20%, rgba(243, 163, 59, 0.24), transparent 36%),
+        radial-gradient(circle at 82% 76%, rgba(20, 99, 86, 0.2), transparent 42%),
+        var(--bg);
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 24px auto;
+      padding: 0 14px 30px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 12px 34px rgba(33, 32, 28, 0.08);
+      overflow: hidden;
+    }
+
+    .top {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(110deg, rgba(20, 99, 86, 0.12), rgba(243, 163, 59, 0.18));
+    }
+
+    h1 { margin: 0; font-size: 1.2rem; }
+
+    .sub {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .controls {
+      padding: 14px 20px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .group { grid-column: span 12; display: flex; flex-direction: column; gap: 6px; }
+    .group.half { grid-column: span 6; }
+
+    label { color: var(--muted); font-size: 0.86rem; }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .actions {
+      grid-column: span 12;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: var(--accent);
+    }
+
+    button.secondary { background: var(--accent-2); color: #2e240d; }
+    button.danger { background: #b33a3a; }
+    button.ghost { background: #e7e2d6; color: #423e35; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .status {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .status.error { color: var(--danger); background: rgba(159, 42, 42, 0.08); }
+    .status.ok { color: var(--accent); background: rgba(20, 99, 86, 0.1); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 0;
+      min-height: 420px;
+    }
+
+    .panel {
+      border-right: 1px solid var(--border);
+      padding: 14px;
+      background: #fbf9f2;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      color: #5e4009;
+    }
+
+    .top-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+
+    .top-list li {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.92rem;
+    }
+
+    .rank { font-weight: 700; color: #c57d12; }
+    .user { font-weight: 700; color: #4c3a16; word-break: break-word; }
+    .likes { font-weight: 700; color: #146356; }
+
+    .chat {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 74vh;
+      overflow: auto;
+      background: #fff;
+    }
+
+    .chat li {
+      border-top: 1px solid var(--border);
+      padding: 10px 16px;
+      display: grid;
+      gap: 2px;
+    }
+
+    .chat li:first-child { border-top: 0; }
+
+    .meta { color: var(--muted); font-size: 0.78rem; }
+    .text { white-space: pre-wrap; word-break: break-word; }
+
+    .empty {
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 8px 2px;
+    }
+
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .panel { border-right: 0; border-bottom: 1px solid var(--border); }
+      .group.half { grid-column: span 12; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <header class="top">
+        <h1>Preview: Top de Taps + Chat</h1>
+        <p class="sub">Vista HTML simple para comprobar como queda el ranking de taps por usuario.</p>
+      </header>
+
+      <section class="controls">
+        <div class="group half">
+          <label for="apiBase">API Base URL</label>
+          <input id="apiBase" type="text" value="http://localhost:3000" />
+        </div>
+
+        <div class="group half">
+          <label for="apiKey">API Key (opcional)</label>
+          <input id="apiKey" type="text" placeholder="x-api-key" />
+        </div>
+
+        <div class="group">
+          <label for="username">Usuario TikTok</label>
+          <input id="username" type="text" placeholder="ej: kingpol_yt" />
+        </div>
+
+        <div class="actions">
+          <button id="connectBtn">Conectar</button>
+          <button id="refreshBtn" class="secondary">Refrescar Ahora</button>
+          <button id="disconnectBtn" class="danger">Desconectar</button>
+          <button id="stopBtn" class="ghost">Detener Auto-Refresh</button>
+        </div>
+      </section>
+
+      <div id="status" class="status">Esperando accion...</div>
+
+      <section class="grid">
+        <aside class="panel">
+          <h2>Top de taps</h2>
+          <ol id="topList" class="top-list"></ol>
+          <div id="topEmpty" class="empty">Aun no hay taps registrados.</div>
+        </aside>
+
+        <section>
+          <ul id="chatList" class="chat"></ul>
+          <div id="chatEmpty" class="empty" style="padding: 14px 16px;">Sin mensajes todavia.</div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const els = {
+      apiBase: document.getElementById('apiBase'),
+      apiKey: document.getElementById('apiKey'),
+      username: document.getElementById('username'),
+      connectBtn: document.getElementById('connectBtn'),
+      refreshBtn: document.getElementById('refreshBtn'),
+      disconnectBtn: document.getElementById('disconnectBtn'),
+      stopBtn: document.getElementById('stopBtn'),
+      status: document.getElementById('status'),
+      topList: document.getElementById('topList'),
+      topEmpty: document.getElementById('topEmpty'),
+      chatList: document.getElementById('chatList'),
+      chatEmpty: document.getElementById('chatEmpty')
+    };
+
+    const state = {
+      streamerId: '',
+      pollTimer: null,
+      pollDelayMs: 8000,
+      configuredPollMs: 8000
+    };
+
+    function toStreamerId(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^@+/, '')
+        .replace(/[^a-z0-9_\-.]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    function baseUrl() {
+      return String(els.apiBase.value || '').trim().replace(/\/$/, '') || 'http://localhost:3000';
+    }
+
+    function requestHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      const key = String(els.apiKey.value || '').trim();
+      if (key) {
+        headers['x-api-key'] = key;
+      }
+      return headers;
+    }
+
+    function setStatus(message, type) {
+      els.status.textContent = message;
+      els.status.className = 'status';
+      if (type) {
+        els.status.classList.add(type);
+      }
+    }
+
+    function stopPolling() {
+      if (!state.pollTimer) return;
+      clearTimeout(state.pollTimer);
+      state.pollTimer = null;
+    }
+
+    function scheduleNextPoll(delayMs) {
+      stopPolling();
+      state.pollTimer = setTimeout(refreshNow, delayMs);
+    }
+
+    function syncActionButtons() {
+      const hasStreamer = Boolean(state.streamerId);
+      els.disconnectBtn.disabled = !hasStreamer;
+      els.refreshBtn.disabled = !hasStreamer;
+    }
+
+    async function apiRequest(path, options = {}) {
+      const response = await fetch(baseUrl() + path, {
+        ...options,
+        headers: {
+          ...requestHeaders(),
+          ...(options.headers || {})
+        }
+      });
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = null;
+      }
+
+      if (!response.ok) {
+        throw new Error((data && data.error) || 'request failed');
+      }
+
+      return data;
+    }
+
+    async function loadRuntimeConfig() {
+      try {
+        const cfg = await apiRequest('/config', { method: 'GET' });
+        const value = Number(cfg && cfg.chatPollIntervalMs);
+        if (Number.isFinite(value) && value >= 2000) {
+          state.configuredPollMs = value;
+          state.pollDelayMs = value;
+        }
+      } catch (_) {
+        state.configuredPollMs = 8000;
+        state.pollDelayMs = 8000;
+      }
+    }
+
+    function renderTop(items) {
+      const safe = Array.isArray(items) ? items : [];
+      els.topList.innerHTML = '';
+
+      if (!safe.length) {
+        els.topEmpty.style.display = 'block';
+        return;
+      }
+
+      els.topEmpty.style.display = 'none';
+      for (const item of safe) {
+        const li = document.createElement('li');
+        li.innerHTML = '<span class="rank"></span><span class="user"></span><span class="likes"></span>';
+        li.querySelector('.rank').textContent = '#' + (item.rank || '-');
+        li.querySelector('.user').textContent = item.user || 'anon';
+        li.querySelector('.likes').textContent = String(item.likes || 0);
+        els.topList.appendChild(li);
+      }
+    }
+
+    function renderMessages(messages) {
+      const safe = Array.isArray(messages) ? messages : [];
+      els.chatList.innerHTML = '';
+
+      if (!safe.length) {
+        els.chatEmpty.style.display = 'block';
+        return;
+      }
+
+      els.chatEmpty.style.display = 'none';
+
+      for (const item of safe.slice().reverse()) {
+        const li = document.createElement('li');
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const date = item.createdAt ? new Date(item.createdAt) : null;
+        meta.textContent = date && !Number.isNaN(date.getTime()) ? date.toLocaleTimeString() : '--:--:--';
+
+        const text = document.createElement('div');
+        text.className = 'text';
+        text.innerHTML = '<span class="user"></span>: <span class="body"></span>';
+        text.querySelector('.user').textContent = item.user || 'anon';
+        text.querySelector('.body').textContent = item.text || '';
+
+        li.appendChild(meta);
+        li.appendChild(text);
+        els.chatList.appendChild(li);
+      }
+    }
+
+    async function refreshNow() {
+      if (!state.streamerId) {
+        setStatus('Primero conecta un usuario.', 'error');
+        return;
+      }
+
+      try {
+        const id = encodeURIComponent(state.streamerId);
+        const [messages, top] = await Promise.all([
+          apiRequest('/streamers/' + id + '/messages', { method: 'GET' }),
+          apiRequest('/streamers/' + id + '/top-taps', { method: 'GET' })
+        ]);
+
+        renderMessages(messages);
+        renderTop(top);
+        setStatus('Conectado a ' + state.streamerId + '. Chat y top de taps actualizados.', 'ok');
+        state.pollDelayMs = state.configuredPollMs;
+      } catch (error) {
+        setStatus('Error al refrescar: ' + error.message, 'error');
+        state.pollDelayMs = Math.min(state.pollDelayMs + 2000, 20000);
+      }
+
+      scheduleNextPoll(state.pollDelayMs);
+    }
+
+    async function connectStreamer() {
+      const username = String(els.username.value || '').trim().replace(/^@+/, '');
+      if (!username) {
+        setStatus('Ingresa un usuario de TikTok primero.', 'error');
+        return;
+      }
+
+      const streamerId = toStreamerId(username);
+      state.streamerId = streamerId;
+      syncActionButtons();
+
+      els.connectBtn.disabled = true;
+      setStatus('Conectando usuario ' + username + '...');
+
+      try {
+        await loadRuntimeConfig();
+
+        try {
+          await apiRequest('/streamers', {
+            method: 'POST',
+            body: JSON.stringify({ username, id: streamerId, autoConnect: true })
+          });
+        } catch (error) {
+          if (!/already exists/i.test(error.message)) {
+            throw error;
+          }
+          await apiRequest('/streamers/' + encodeURIComponent(streamerId) + '/connect', {
+            method: 'POST'
+          });
+        }
+
+        await refreshNow();
+      } catch (error) {
+        state.streamerId = '';
+        syncActionButtons();
+        setStatus('No se pudo conectar: ' + error.message, 'error');
+      } finally {
+        els.connectBtn.disabled = false;
+      }
+    }
+
+    async function disconnectStreamer() {
+      if (!state.streamerId) {
+        setStatus('No hay usuario conectado.', 'error');
+        return;
+      }
+
+      const current = state.streamerId;
+      stopPolling();
+      setStatus('Desconectando ' + current + '...');
+
+      try {
+        await apiRequest('/streamers/' + encodeURIComponent(current) + '/disconnect', {
+          method: 'POST'
+        });
+        state.streamerId = '';
+        renderMessages([]);
+        renderTop([]);
+        setStatus('Usuario desconectado: ' + current, 'ok');
+      } catch (error) {
+        setStatus('No se pudo desconectar: ' + error.message, 'error');
+      }
+
+      syncActionButtons();
+    }
+
+    els.connectBtn.addEventListener('click', connectStreamer);
+    els.refreshBtn.addEventListener('click', refreshNow);
+    els.disconnectBtn.addEventListener('click', disconnectStreamer);
+    els.stopBtn.addEventListener('click', () => {
+      stopPolling();
+      setStatus('Auto-refresh detenido.', 'ok');
+    });
+
+    syncActionButtons();
+  </script>
+</body>
+</html>

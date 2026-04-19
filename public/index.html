@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TikTok Live Chat Viewer</title>
+  <style>
+    :root {
+      --bg: #f4f2ec;
+      --surface: #fffdf7;
+      --ink: #21201c;
+      --accent: #146356;
+      --accent-2: #f3a33b;
+      --muted: #6a665a;
+      --danger: #9f2a2a;
+      --border: #d8d0be;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 20%, rgba(243, 163, 59, 0.24), transparent 36%),
+        radial-gradient(circle at 82% 76%, rgba(20, 99, 86, 0.2), transparent 42%),
+        var(--bg);
+    }
+
+    .wrap {
+      max-width: 920px;
+      margin: 32px auto;
+      padding: 0 16px 40px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 12px 34px rgba(33, 32, 28, 0.08);
+      overflow: hidden;
+    }
+
+    .top {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(110deg, rgba(20, 99, 86, 0.12), rgba(243, 163, 59, 0.18));
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: 0.3px;
+    }
+
+    .sub {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .controls {
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .group {
+      grid-column: span 12;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .group.half {
+      grid-column: span 6;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .actions {
+      grid-column: span 12;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: var(--accent);
+    }
+
+    button.secondary {
+      background: var(--accent-2);
+      color: #2e240d;
+    }
+
+    button.ghost {
+      background: #e7e2d6;
+      color: #423e35;
+    }
+
+    button.danger {
+      background: #b33a3a;
+      color: #fff;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .status.error {
+      color: var(--danger);
+      background: rgba(159, 42, 42, 0.08);
+    }
+
+    .status.ok {
+      color: var(--accent);
+      background: rgba(20, 99, 86, 0.1);
+    }
+
+    .chat {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 62vh;
+      overflow: auto;
+    }
+
+    .chat li {
+      border-top: 1px solid var(--border);
+      padding: 10px 20px;
+      display: grid;
+      gap: 2px;
+    }
+
+    .chat li:first-child {
+      border-top: 0;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .user {
+      font-weight: 700;
+      color: #5e4009;
+    }
+
+    .text {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .empty {
+      padding: 18px 20px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 760px) {
+      .group.half {
+        grid-column: span 12;
+      }
+
+      .wrap {
+        margin-top: 14px;
+      }
+
+      .chat {
+        max-height: 55vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <header class="top">
+        <h1>Conectar Usuario y Ver Chat En Vivo</h1>
+        <p class="sub">Agrega un usuario de TikTok Live, conecta y refresca mensajes automaticamente.</p>
+      </header>
+
+      <section class="controls">
+        <div class="group half">
+          <label for="apiBase">API Base URL</label>
+          <input id="apiBase" type="text" value="http://localhost:3000" />
+        </div>
+
+        <div class="group half">
+          <label for="apiKey">API Key (opcional)</label>
+          <input id="apiKey" type="text" placeholder="x-api-key" />
+        </div>
+
+        <div class="group">
+          <label for="username">Usuario TikTok</label>
+          <input id="username" type="text" placeholder="ej: kingpol_yt" />
+        </div>
+
+        <div class="actions">
+          <button id="connectBtn">Conectar Usuario</button>
+          <button id="refreshBtn" class="secondary">Refrescar Ahora</button>
+          <button id="disconnectBtn" class="danger">Desconectar</button>
+          <button id="stopBtn" class="ghost">Detener Auto-Refresh</button>
+        </div>
+
+        <div class="group">
+          <label>
+            <input id="speakToggle" type="checkbox" checked style="width:auto; margin-right:8px; vertical-align:middle;" />
+            Hablar chat en este navegador
+          </label>
+        </div>
+      </section>
+
+      <div id="status" class="status">Esperando accion...</div>
+      <ul id="chatList" class="chat"></ul>
+      <div id="empty" class="empty">Sin mensajes todavia.</div>
+    </section>
+  </main>
+
+  <script>
+    const els = {
+      apiBase: document.getElementById('apiBase'),
+      apiKey: document.getElementById('apiKey'),
+      username: document.getElementById('username'),
+      connectBtn: document.getElementById('connectBtn'),
+      refreshBtn: document.getElementById('refreshBtn'),
+      disconnectBtn: document.getElementById('disconnectBtn'),
+      stopBtn: document.getElementById('stopBtn'),
+      speakToggle: document.getElementById('speakToggle'),
+      status: document.getElementById('status'),
+      chatList: document.getElementById('chatList'),
+      empty: document.getElementById('empty')
+    };
+
+    const state = {
+      streamerId: '',
+      pollTimer: null,
+      lastSignature: '',
+      seenMessages: new Set(),
+      pollDelayMs: 8000,
+      configuredPollMs: 8000
+    };
+
+    function messageKey(item) {
+      return [item && item.createdAt, item && item.user, item && item.text].join('|');
+    }
+
+    function speakMessage(message) {
+      if (!els.speakToggle.checked || !window.speechSynthesis || !window.SpeechSynthesisUtterance) {
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance((message.user || 'anon') + ' dice ' + (message.text || ''));
+      utterance.lang = 'es-ES';
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function toStreamerId(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^@+/, '')
+        .replace(/[^a-z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 50);
+    }
+
+    function normalizeUsername(value) {
+      return String(value || '').trim().replace(/^@+/, '').toLowerCase();
+    }
+
+    function baseUrl() {
+      return String(els.apiBase.value || '').trim().replace(/\/$/, '') || 'http://localhost:3000';
+    }
+
+    function requestHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      const key = String(els.apiKey.value || '').trim();
+      if (key) {
+        headers['x-api-key'] = key;
+      }
+      return headers;
+    }
+
+    function setStatus(message, type) {
+      els.status.textContent = message;
+      els.status.className = 'status';
+      if (type) {
+        els.status.classList.add(type);
+      }
+    }
+
+    function syncActionButtons() {
+      const hasStreamer = Boolean(state.streamerId);
+      els.disconnectBtn.disabled = !hasStreamer;
+      els.refreshBtn.disabled = !hasStreamer;
+    }
+
+    function setDisconnectedUi() {
+      state.streamerId = '';
+      state.lastSignature = '';
+      state.seenMessages = new Set();
+      els.chatList.innerHTML = '';
+      els.empty.style.display = 'block';
+      syncActionButtons();
+    }
+
+    function stopPolling() {
+      if (!state.pollTimer) {
+        return;
+      }
+      clearTimeout(state.pollTimer);
+      state.pollTimer = null;
+    }
+
+    function scheduleNextPoll(delayMs) {
+      stopPolling();
+      state.pollTimer = setTimeout(fetchMessages, delayMs);
+    }
+
+    function startPolling() {
+      state.pollDelayMs = state.configuredPollMs;
+      scheduleNextPoll(state.pollDelayMs);
+    }
+
+    async function loadRuntimeConfig() {
+      try {
+        const data = await fetch(baseUrl() + '/config', {
+          method: 'GET',
+          headers: requestHeaders()
+        });
+        const json = await data.json();
+        const value = Number(json && json.chatPollIntervalMs);
+        if (Number.isFinite(value) && value >= 2000) {
+          state.configuredPollMs = value;
+          state.pollDelayMs = value;
+        }
+      } catch (_) {
+        state.configuredPollMs = 8000;
+        state.pollDelayMs = 8000;
+      }
+    }
+
+    async function apiRequest(path, options = {}) {
+      const response = await fetch(baseUrl() + path, {
+        ...options,
+        headers: {
+          ...requestHeaders(),
+          ...(options.headers || {})
+        }
+      });
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = null;
+      }
+
+      if (!response.ok) {
+        const error = data && data.error ? data.error : 'request failed';
+        const wrapped = new Error(error);
+        wrapped.status = response.status;
+        throw wrapped;
+      }
+
+      return data;
+    }
+
+    async function resolveStreamerIdByUsername(username) {
+      const safeUsername = normalizeUsername(username);
+      if (!safeUsername) {
+        return '';
+      }
+
+      const streamers = await apiRequest('/streamers', { method: 'GET' });
+      const match = Array.isArray(streamers)
+        ? streamers.find(item => normalizeUsername(item && item.username) === safeUsername)
+        : null;
+      return match && match.id ? String(match.id) : '';
+    }
+
+    function renderMessages(messages) {
+      const safeList = Array.isArray(messages) ? messages : [];
+      const signature = JSON.stringify(safeList.map(item => [item.createdAt, item.user, item.text]));
+
+      els.chatList.innerHTML = '';
+
+      if (safeList.length === 0) {
+        els.empty.style.display = 'block';
+        return;
+      }
+
+      els.empty.style.display = 'none';
+
+      const freshMessages = [];
+
+      for (const item of safeList) {
+        const key = messageKey(item);
+        if (!state.seenMessages.has(key)) {
+          state.seenMessages.add(key);
+          freshMessages.push(item);
+        }
+      }
+
+      state.lastSignature = signature;
+
+      for (const item of safeList.slice().reverse()) {
+        const li = document.createElement('li');
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const date = item.createdAt ? new Date(item.createdAt) : null;
+        const timestamp = date && !Number.isNaN(date.getTime()) ? date.toLocaleTimeString() : '--:--:--';
+        meta.textContent = timestamp;
+
+        const text = document.createElement('div');
+        text.className = 'text';
+        text.innerHTML = '<span class="user"></span>: <span class="body"></span>';
+        text.querySelector('.user').textContent = item.user || 'anon';
+        text.querySelector('.body').textContent = item.text || '';
+
+        li.appendChild(meta);
+        li.appendChild(text);
+        els.chatList.appendChild(li);
+      }
+
+      for (const item of freshMessages) {
+        speakMessage(item);
+      }
+    }
+
+    async function fetchMessages() {
+      if (!state.streamerId) {
+        return;
+      }
+
+      try {
+        const messages = await apiRequest('/streamers/' + encodeURIComponent(state.streamerId) + '/messages', {
+          method: 'GET'
+        });
+        const hadNewMessages = JSON.stringify(Array.isArray(messages) ? messages.map(item => [item.createdAt, item.user, item.text]) : []) !== state.lastSignature;
+        renderMessages(messages);
+        setStatus('Conectado a ' + state.streamerId + '. Escuchando chat en vivo...', 'ok');
+        state.pollDelayMs = hadNewMessages ? 5000 : Math.min(state.pollDelayMs + 1000, 15000);
+        scheduleNextPoll(state.pollDelayMs);
+      } catch (error) {
+        if (error && error.status === 404) {
+          stopPolling();
+          setDisconnectedUi();
+          if (/streamer not found/i.test(String(error.message || ''))) {
+            setStatus('El streamer ya no existe en backend. Vuelve a conectar el usuario.', 'error');
+          } else {
+            setStatus('El endpoint de mensajes devolvio 404. Revisa API Base URL o reinicia backend.', 'error');
+          }
+          return;
+        }
+
+        setStatus('Error al leer mensajes: ' + error.message, 'error');
+        state.pollDelayMs = Math.min(state.pollDelayMs + 2000, 20000);
+        scheduleNextPoll(state.pollDelayMs);
+      }
+    }
+
+    async function connectStreamer() {
+      const username = String(els.username.value || '').trim().replace(/^@+/, '');
+      if (!username) {
+        setStatus('Ingresa un usuario de TikTok primero.', 'error');
+        return;
+      }
+
+      const fallbackStreamerId = toStreamerId(username);
+      state.streamerId = fallbackStreamerId;
+      state.lastSignature = '';
+      state.seenMessages = new Set();
+      syncActionButtons();
+
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+
+      els.connectBtn.disabled = true;
+      setStatus('Conectando usuario ' + username + ' ...');
+
+      try {
+        await loadRuntimeConfig();
+        try {
+          const created = await apiRequest('/streamers', {
+            method: 'POST',
+            body: JSON.stringify({ username, id: fallbackStreamerId, autoConnect: true })
+          });
+          state.streamerId = (created && created.streamer && created.streamer.id) || fallbackStreamerId;
+          setStatus('Usuario agregado y conectado: ' + state.streamerId, 'ok');
+        } catch (error) {
+          if (!/already exists/i.test(error.message)) {
+            throw error;
+          }
+
+          const existingId = await resolveStreamerIdByUsername(username);
+          const activeId = existingId || fallbackStreamerId;
+          state.streamerId = activeId;
+
+          const connected = await apiRequest('/streamers/' + encodeURIComponent(activeId) + '/connect', {
+            method: 'POST'
+          });
+          state.streamerId = (connected && connected.streamer && connected.streamer.id) || activeId;
+          setStatus('Usuario ya existia. Reconectado: ' + state.streamerId, 'ok');
+        }
+
+        await fetchMessages();
+        if (state.streamerId) {
+          startPolling();
+        }
+      } catch (error) {
+        setDisconnectedUi();
+        setStatus('No se pudo conectar: ' + error.message, 'error');
+      } finally {
+        els.connectBtn.disabled = false;
+      }
+    }
+
+    async function disconnectStreamer() {
+      if (!state.streamerId) {
+        setStatus('No hay un usuario conectado.', 'error');
+        return;
+      }
+
+      const currentStreamerId = state.streamerId;
+      els.disconnectBtn.disabled = true;
+      setStatus('Desconectando usuario ' + currentStreamerId + ' ...');
+
+      stopPolling();
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+
+      try {
+        await apiRequest('/streamers/' + encodeURIComponent(currentStreamerId) + '/disconnect', {
+          method: 'POST'
+        });
+        setDisconnectedUi();
+        setStatus('Usuario desconectado: ' + currentStreamerId, 'ok');
+      } catch (error) {
+        setStatus('No se pudo desconectar: ' + error.message, 'error');
+      } finally {
+        els.disconnectBtn.disabled = false;
+      }
+    }
+
+    els.connectBtn.addEventListener('click', connectStreamer);
+    els.refreshBtn.addEventListener('click', fetchMessages);
+    els.disconnectBtn.addEventListener('click', disconnectStreamer);
+    els.stopBtn.addEventListener('click', () => {
+      stopPolling();
+      setStatus('Auto-refresh detenido. Puedes usar "Refrescar Ahora".', 'ok');
+    });
+
+    loadRuntimeConfig();
+    syncActionButtons();
+  </script>
+</body>
+</html>
