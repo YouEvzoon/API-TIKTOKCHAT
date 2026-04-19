@@ -1,0 +1,6 @@
+
+> tiktok-live-tts-node@1.0.0 start
+> node index.js
+
+API local lista en http://localhost:3000
+Auto-arranque desactivado. Usa POST /streamers o la UI web para conectar usuarios manualmente.
