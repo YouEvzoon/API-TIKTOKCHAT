@@ -30,7 +30,12 @@ function createStreamerRoutes(manager) {
       await manager.connect(result.streamer, 'api-create');
     }
 
-    res.status(201).json({ ok: true, streamer: manager.toSummary(result.streamer) });
+    const statusCode = result.existed ? 200 : 201;
+    res.status(statusCode).json({
+      ok: true,
+      existed: Boolean(result.existed),
+      streamer: manager.toSummary(result.streamer)
+    });
   });
 
   router.delete('/streamers/:id', async (req, res) => {

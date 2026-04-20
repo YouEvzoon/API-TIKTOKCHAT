@@ -95,13 +95,15 @@ function start() {
   });
 
   manager.onChat(message => {
-    io.emit('chat:new', message);
-    io.to(`streamer:${message.streamerId}`).emit('streamer:chat', message);
+    const room = `streamer:${message.streamerId}`;
+    io.to(room).emit('chat:new', message);
+    io.to(room).emit('streamer:chat', message);
   });
 
   manager.onLike(message => {
-    io.emit('like:new', message);
-    io.to(`streamer:${message.streamerId}`).emit('streamer:like', message);
+    const room = `streamer:${message.streamerId}`;
+    io.to(room).emit('like:new', message);
+    io.to(room).emit('streamer:like', message);
   });
 
   server.listen(port, () => {

@@ -33,48 +33,96 @@ function isFatalConnectError(error) {
 class StreamerManager {
   constructor() {
     this.streamers = new Map();
-    this.chatListeners = new Set();
-    this.likeListeners = new Set();
+    this.chatListeners = new Map();
+    this.likeListeners = new Map();
   }
 
-  onChat(listener) {
+  onChat(listener, streamerId) {
     if (typeof listener !== 'function') {
       return () => {};
     }
 
-    this.chatListeners.add(listener);
+    const key = normalizeText(streamerId || '__all__') || '__all__';
+    const listeners = this.chatListeners.get(key) || new Set();
+    listeners.add(listener);
+    this.chatListeners.set(key, listeners);
+
     return () => {
-      this.chatListeners.delete(listener);
+      const current = this.chatListeners.get(key);
+      if (!current) {
+        return;
+      }
+      current.delete(listener);
+      if (current.size === 0) {
+        this.chatListeners.delete(key);
+      }
     };
   }
 
   emitChatMessage(message) {
-    for (const listener of this.chatListeners) {
-      try {
-        listener(message);
-      } catch (error) {
-        console.error('[socket] Error en listener de chat:', error.message || error);
+    const targetKeys = ['__all__'];
+    const streamerKey = normalizeText(message && message.streamerId);
+    if (streamerKey && streamerKey !== '__all__') {
+      targetKeys.push(streamerKey);
+    }
+
+    for (const key of targetKeys) {
+      const listeners = this.chatListeners.get(key);
+      if (!listeners) {
+        continue;
+      }
+
+      for (const listener of listeners) {
+        try {
+          listener(message);
+        } catch (error) {
+          console.error('[socket] Error en listener de chat:', error.message || error);
+        }
       }
     }
   }
 
-  onLike(listener) {
+  onLike(listener, streamerId) {
     if (typeof listener !== 'function') {
       return () => {};
     }
 
-    this.likeListeners.add(listener);
+    const key = normalizeText(streamerId || '__all__') || '__all__';
+    const listeners = this.likeListeners.get(key) || new Set();
+    listeners.add(listener);
+    this.likeListeners.set(key, listeners);
+
     return () => {
-      this.likeListeners.delete(listener);
+      const current = this.likeListeners.get(key);
+      if (!current) {
+        return;
+      }
+      current.delete(listener);
+      if (current.size === 0) {
+        this.likeListeners.delete(key);
+      }
     };
   }
 
   emitLikeMessage(message) {
-    for (const listener of this.likeListeners) {
-      try {
-        listener(message);
-      } catch (error) {
-        console.error('[socket] Error en listener de like:', error.message || error);
+    const targetKeys = ['__all__'];
+    const streamerKey = normalizeText(message && message.streamerId);
+    if (streamerKey && streamerKey !== '__all__') {
+      targetKeys.push(streamerKey);
+    }
+
+    for (const key of targetKeys) {
+      const listeners = this.likeListeners.get(key);
+      if (!listeners) {
+        continue;
+      }
+
+      for (const listener of listeners) {
+        try {
+          listener(message);
+        } catch (error) {
+          console.error('[socket] Error en listener de like:', error.message || error);
+        }
       }
     }
   }
@@ -92,18 +140,28 @@ class StreamerManager {
   }
 
   create(payload = {}) {
-    const username = normalizeText(payload.username).replace(/^@+/, '');
+    const username = normalizeText(
+      payload.username
+      || payload.user
+      || payload.uniqueId
+      || payload.tiktokUsername
+      || payload.tiktokUser
+      || payload.handle
+      || payload.streamer
+      || payload.streamerId
+      || payload.id
+    ).replace(/^@+/, '');
     if (!username) {
       return { error: 'username is required' };
     }
 
-    const id = toStreamerId(payload.id || username);
+    const id = toStreamerId(payload.id || payload.streamerId || username);
     if (!id) {
       return { error: 'invalid id' };
     }
 
     if (this.streamers.has(id)) {
-      return { error: 'streamer already exists' };
+      return { streamer: this.streamers.get(id), existed: true };
     }
 
     const connection = new WebcastPushConnection(username);
@@ -123,7 +181,7 @@ class StreamerManager {
 
     this.attachEvents(streamer);
     this.streamers.set(id, streamer);
-    return { streamer };
+    return { streamer, existed: false };
   }
 
   attachEvents(streamer) {
