@@ -30,6 +30,16 @@ function isFatalConnectError(error) {
   );
 }
 
+function isOfflineConnectError(error) {
+  const message = String(error && error.message ? error.message : error || '').toLowerCase();
+  return (
+    message.includes("isn't online")
+    || message.includes('is not online')
+    || message.includes('user offline')
+    || message.includes('not online')
+  );
+}
+
 class StreamerManager {
   constructor() {
     this.streamers = new Map();
@@ -175,6 +185,7 @@ class StreamerManager {
       reconnectTimer: null,
       reconnectAttempt: 0,
       pausedUntil: 0,
+      suspendAutoReconnect: false,
       lastError: null,
       lastEventAt: nowIso()
     };
@@ -197,6 +208,7 @@ class StreamerManager {
         type: 'chat',
         user,
         text,
+        avatar: data.user?.profilePictureUrl || null,
         createdAt: nowIso()
       };
 
@@ -221,6 +233,7 @@ class StreamerManager {
         user,
         likes: likeCount,
         totalLikes: Number(data.totalLikeCount) || null,
+        avatar: data.profilePictureUrl || data.user?.avatar || data.user?.profilePictureUrl || data.user?.avatarThumb || null,
         createdAt: nowIso()
       };
 
@@ -237,10 +250,14 @@ class StreamerManager {
     });
 
     streamer.connection.on('streamEnd', () => {
+      this.clearReconnectTimer(streamer);
       streamer.connected = false;
+      streamer.suspendAutoReconnect = true;
+      streamer.reconnectAttempt = 0;
+      streamer.pausedUntil = 0;
       streamer.lastEventAt = nowIso();
       console.warn(`[${streamer.id}] El directo termino o se cerro la conexion.`);
-      this.scheduleReconnect(streamer, 'event-streamEnd');
+      console.warn(`[${streamer.id}] Reconexion automatica desactivada hasta conexion manual.`);
     });
   }
 
@@ -291,6 +308,10 @@ class StreamerManager {
       return;
     }
 
+    if (streamer.suspendAutoReconnect) {
+      return;
+    }
+
     const now = Date.now();
     if (streamer.pausedUntil && streamer.pausedUntil > now) {
       const pauseMs = streamer.pausedUntil - now;
@@ -327,6 +348,7 @@ class StreamerManager {
 
   async connect(streamer, reason = 'manual') {
     this.clearReconnectTimer(streamer);
+    streamer.suspendAutoReconnect = false;
 
     const now = Date.now();
     if (streamer.pausedUntil && streamer.pausedUntil > now) {
@@ -354,6 +376,7 @@ class StreamerManager {
     } catch (error) {
       if (/already connected/i.test(error.message || '')) {
         streamer.connected = true;
+        streamer.suspendAutoReconnect = false;
         streamer.reconnectAttempt = 0;
         streamer.pausedUntil = 0;
         streamer.lastError = null;
@@ -362,8 +385,24 @@ class StreamerManager {
         return;
       }
 
+      if (isOfflineConnectError(error)) {
+        streamer.connected = false;
+        streamer.suspendAutoReconnect = true;
+        streamer.lastError = error.message || String(error);
+        streamer.lastEventAt = nowIso();
+        streamer.reconnectAttempt = 0;
+        streamer.pausedUntil = 0;
+        console.error(`[${streamer.id}] No se pudo conectar a TikTok Live:`, streamer.lastError);
+        console.warn(
+          `[${streamer.id}] El usuario no esta en vivo. ` +
+          `Se detuvieron los reintentos automáticos hasta una conexion manual.`
+        );
+        return;
+      }
+
       if (isFatalConnectError(error)) {
         streamer.connected = false;
+        streamer.suspendAutoReconnect = true;
         streamer.lastError = error.message || String(error);
         streamer.lastEventAt = nowIso();
         streamer.reconnectAttempt = 0;
@@ -386,6 +425,7 @@ class StreamerManager {
 
   async disconnect(streamer, reason = 'manual') {
     this.clearReconnectTimer(streamer);
+    streamer.suspendAutoReconnect = true;
     streamer.pausedUntil = 0;
     streamer.reconnectAttempt = 0;
 
@@ -448,6 +488,7 @@ class StreamerManager {
       topTaps: this.getTopTaps(streamer, 3),
       reconnectAttempt: streamer.reconnectAttempt,
       pausedUntil: streamer.pausedUntil ? new Date(streamer.pausedUntil).toISOString() : null,
+      suspendAutoReconnect: streamer.suspendAutoReconnect,
       lastError: streamer.lastError,
       lastEventAt: streamer.lastEventAt
     };
